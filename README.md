@@ -173,3 +173,116 @@
    
    > 默认情况下。PlayerState 的所有者会自动设置为 Controller，因此我们实际上不需要执行任何操作。
 
+# 第3节：属性（Atrributes）
+
+1. 在构造函数中，当我们在 AbilitySystemComponent 旁边构建 AttributeSet 时，它会自动注册到 AbilitySystemComponent 中。AbilitySystemComponent 可以访问它以及注册的任何其他 AttributeSet；
+   
+   ![](./Res/ReadMe_Res/14_AttributeSet.png)
+
+   > 同一 UAttributeSet 类型不能有多个属性集，否则，尝试从 AbilitySystemComponent 检索时会有歧义；
+   > 将所有属性包含在同一属性上是完全可以接受的（在这个项目中就是这样）
+
+   ![](./Res/ReadMe_Res/15_AttributeSet.png)
+
+2. **属性是与游戏中给定实体（例如角色）相关的数值，所有属性都是浮点数**，他们存在于称为 **FGameplayAttributeData** 的结构体中（包含两个 float 值，官方建议使用），属性存储在属性集上，属性集对其进行密切监督；我们可以知道属性何时发生变化，并使用我们喜欢的任何功能来影响它；
+   现在可以直接在代码中设置属性值，但更改它的首选方法是应用 **游戏效果 (Gameplay Effects)**；
+
+   Gameplay Effects 还帮我们做了预测，这可以让我们的多人游戏体验更加流畅：
+
+   ![](./Res/ReadMe_Res/16_GameplayEffects.png)
+
+3. 通过 **GAS 预测**，Gameplay Effects 会修改客户端的属性，并且在客户端上可以立即感知到该变化，无滞后时间；
+   然后，该更改将发送到服务器，服务器仍然负责验证该更改。如果服务器认为这是有效的更改，那就酷了。它可以将更改通知其他客户端。但是，如果服务器确定更改无效，假设客户端破解了游戏，例如，尝试造成不合常理的损害，那么服务器可以拒绝该更改并回滚到正确的值。所以服务器仍然有权限，但是我们的客户端不必有延迟。预测很复杂，将其作为整个 GAS 的内置功能是一个巨大的好处。让我们专注于创建游戏机制，而不用担心实施滞后补偿。
+
+   ![](./Res/ReadMe_Res/17_GameplayEffects.png)
+
+4. 属性实际上由两个值组成：基值（Base Value）和当前值（Current Value），基值是属性的永久值。当前值是基础值加上游戏效果（Gameplay Effects）造成的任何临时的修改。
+   
+   ![](./Res/ReadMe_Res/18_Attribute.png)
+
+5. 在多人游戏中，我们会将属性设置为 Replicated，我们也知道，游戏效果会自动帮我们做预测的工作；
+   **对于属性，我们需要使用代表通知（RepNotify），请记住，当变量被复制时，RepNotify 会自动被调用，因此当服务器复制时，将变量发送给客户端，客户端会触发该变量的 RepNotify（注意 RepNotify 必须是 UFUNCTION）**；
+
+   > 代表通知可以接受0个或者1个参数，如果它们接受一个参数（只能是对应的复制变量，可以是 const 和 &），当被调用时会传入对应复制变量的旧值（这对于比较新旧值很有用）
+
+    ```cpp
+    UCLASS()
+    class AURA_API UAuraAttributeSet : public UAttributeSet
+    {
+        GENERATED_BODY()
+        
+    public:
+        UAuraAttributeSet();
+        virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const;
+
+        UPROPERTY(ReplicatedUsing = OnRep_Health)
+        FGameplayAttributeData Health;
+
+        UPROPERTY(ReplicatedUsing = OnRep_MaxHealth)
+        FGameplayAttributeData MaxHealth;
+
+        UPROPERTY(ReplicatedUsing = OnRep_Mana)
+        FGameplayAttributeData Mana;
+
+        UPROPERTY(ReplicatedUsing = OnRep_MaxMana)
+        FGameplayAttributeData MaxMana;
+
+        UFUNCTION()
+        void OnRep_Health(const FGameplayAttributeData& OldHealth) const;
+
+        UFUNCTION()
+        void OnRep_MaxHealth(const FGameplayAttributeData& OldMaxHealth) const;
+
+        UFUNCTION()
+        void OnRep_Mana(const FGameplayAttributeData& OldMana) const;
+
+        UFUNCTION()
+        void OnRep_MaxMana(const FGameplayAttributeData& OldMaxMana) const;
+    };
+    ```
+
+    GAMEPLAYATTRIBUTE_REPNOTIFY(ClassName, PropertyName, OldValue)
+
+    ```cpp
+    UAuraAttributeSet::UAuraAttributeSet()
+    {
+    }
+
+    void UAuraAttributeSet::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+    {
+        Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+        /**
+        * REPNOTIFY_OnChanged 是当变量值改变时才复制
+        * 对于 GAS，我们无论如何都想复制它，因为如果我们设置它，我们可能想要响应设置它的行为。
+        * 无论我们将其设置为新值还是其自身的相同值，您都可能想要响应，即使它的数值没有改变。
+        * 因此这里我们使用 REPNOTIFY_Always
+        */
+        DOREPLIFETIME_CONDITION_NOTIFY(UAuraAttributeSet, Health, COND_None, REPNOTIFY_Always);
+        DOREPLIFETIME_CONDITION_NOTIFY(UAuraAttributeSet, MaxHealth, COND_None, REPNOTIFY_Always);
+        DOREPLIFETIME_CONDITION_NOTIFY(UAuraAttributeSet, Mana, COND_None, REPNOTIFY_Always);
+        DOREPLIFETIME_CONDITION_NOTIFY(UAuraAttributeSet, MaxMana, COND_None, REPNOTIFY_Always);
+    }
+
+    void UAuraAttributeSet::OnRep_Health(const FGameplayAttributeData& OldHealth) const
+    {
+        // 负责通知 AbilitySystemComponent 属性被复制了，并跟踪旧值，以防万一需要回滚任何内容
+        GAMEPLAYATTRIBUTE_REPNOTIFY(UAuraAttributeSet, Health, OldHealth);
+    }
+
+    void UAuraAttributeSet::OnRep_MaxHealth(const FGameplayAttributeData& OldMaxHealth) const
+    {
+        GAMEPLAYATTRIBUTE_REPNOTIFY(UAuraAttributeSet, MaxHealth, OldMaxHealth);
+    }
+
+    void UAuraAttributeSet::OnRep_Mana(const FGameplayAttributeData& OldMana) const
+    {
+        GAMEPLAYATTRIBUTE_REPNOTIFY(UAuraAttributeSet, Mana, OldMana);
+    }
+
+    void UAuraAttributeSet::OnRep_MaxMana(const FGameplayAttributeData& OldMaxMana) const
+    {
+        GAMEPLAYATTRIBUTE_REPNOTIFY(UAuraAttributeSet, MaxMana, OldMaxMana);
+    }
+    ```
+
