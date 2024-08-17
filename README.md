@@ -114,9 +114,9 @@
   > - 游戏效果组件 (Gameplay Effect Components)
 - **Ability Tasks**
 
-![](./res/ReadMe_Res/1_GameplayAbilitySystem.png)
+![](./Res/ReadMe_Res/1_GameplayAbilitySystem.png)
 
-![](./res/ReadMe_Res/2_GameplayAbilitySystem.png)
+![](./Res/ReadMe_Res/2_GameplayAbilitySystem.png)
 
 可以将这些保留在 Pawn 或者 PlayerState 上
 
@@ -125,25 +125,25 @@
 
 **在这个项目中，我们的敌人角色将直接拥有他们的能力、系统组件和属性集，但是对于我们的玩家控制的角色，我们将把我们的能力系统组件和属性；**
 
-![](./res/ReadMe_Res/3_GameplayAbilitySystem.png)
+![](./Res/ReadMe_Res/3_GameplayAbilitySystem.png)
 
-![](./res/ReadMe_Res/4_GameplayAbilitySystem.png)
+![](./Res/ReadMe_Res/4_GameplayAbilitySystem.png)
 
 使用前需要启用插件
 
-![](./res/ReadMe_Res/5_EnablePugin.png)
+![](./Res/ReadMe_Res/5_EnablePugin.png)
 
-![](./res/ReadMe_Res/6_AbilitySystemComponent.png)
+![](./Res/ReadMe_Res/6_AbilitySystemComponent.png)
 
-![](./res/ReadMe_Res/7_AttributeSet.png)
+![](./Res/ReadMe_Res/7_AttributeSet.png)
 
-![](./res/ReadMe_Res/8_Add_Modules.png)
+![](./Res/ReadMe_Res/8_Add_Modules.png)
 
 ## GAS In Multiplayer
 
-![](./res/ReadMe_Res/9_GAS_In_Multiplayer.png)
+![](./Res/ReadMe_Res/9_GAS_In_Multiplayer.png)
 
-![](./res/ReadMe_Res/10_GAS_In_Multiplayer.png)
+![](./Res/ReadMe_Res/10_GAS_In_Multiplayer.png)
 
 ## Remarks
 
@@ -159,5 +159,17 @@
    UAbilitySystemComponent::SetReplicationMode(EGameplayEffectReplicationMode::Mixed);
    ```
 
-   ![](./res/ReadMe_Res/11_ReplicationMode.png)
+   ![](./Res/ReadMe_Res/11_ReplicationMode.png)
+
+3. 初始化 ASC 的 Owner Actor 和 Avator Actor
+   
+   ![](./Res/ReadMe_Res/12_InitAbilityActorInfo.png)
+
+   ![](./Res/ReadMe_Res/13_InitAbilityActorInfo.png)
+
+4. 对于混合复制（Mixed）模式：OwnerActor 的 Owner 必须是 Controller。对于 pawn，这是在 posssedby() 中自动设置的；
+   PlayerState 的所有者被自动设置为 Controller；
+   因此，如果你的 OwnerActor 不是 PlayerState，并且你使用混合复制模式，你必须在 OwnerActor 上调用 SetOwner() 来将其所有者设置为 Controller；
+   
+   > 默认情况下。PlayerState 的所有者会自动设置为 Controller，因此我们实际上不需要执行任何操作。
 
