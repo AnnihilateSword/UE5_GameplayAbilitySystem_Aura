@@ -30,3 +30,8 @@ void AAuraCharacterBase::SetupPlayerInputComponent(UInputComponent* PlayerInputC
 
 }
 
+UAbilitySystemComponent* AAuraCharacterBase::GetAbilitySystemComponent() const
+{
+	return AbilitySystemComponent;
+}
+
