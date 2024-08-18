@@ -10,9 +10,10 @@
 
 >
 
-2. 	(1) 对于C++中的指针，我们可以使用 check 代替 if 判断是否有效，如果这是调试模式这会触发断点；
+2. 	(1) 对于C++中的指针，我们可以使用 **check** 代替 if 判断是否有效，如果这是调试模式这会触发断点，如果你希望 false 时发生崩溃可以这样做；
 	(2) 对于转换我们也可以使用 CastChecked 代替 Cast，会比 Cast 多个断言；
     (3) Cast 如果转换失败会返回 nullptr；
+    (4) **checkf** 如果判断失败会比 check 多打印字符到日志中；
 
 >
 
@@ -397,7 +398,7 @@ class AURA_API UAuraWidgetController : public UObject
 	GENERATED_BODY()
 	
 protected:
-	/** WidgetContoller 从下面这4个对象中获取数据 */
+	/** WidgetContoller 从下面这4个关键变量中获取数据 */
 	UPROPERTY(BlueprintReadOnly, Category = "WidgetController")
 	TObjectPtr<APlayerController> PlayerController;
 
@@ -440,5 +441,8 @@ protected:
 3. 该项目中会创建一个 WBP_Overlay 来包含其他 Widget，我们还会创建一个 HUD（AuraHUD），在 HUD 中添加 WBP_Overlay 到视口（Viewport）中；
    
    > 不使用 Canvas Panel 效率更高，如果不需要尽量不要添加；
+
+4. 可以在 AAuraCharacter::InitAbilityActorInfo() 中初始化 OverlayWidget， AuraHUD->InitOverlay，这时我们需要的关键数据都已经用有效数据初始化了；
+   我们在 HUD 中存储 OverlayWidgetController；
 
 
