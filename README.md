@@ -431,3 +431,14 @@ protected:
 
     ![](./Res/ReadMe_Res/28_SetPadding.png)
 
+    > 可以公开变量，方便派生类配置属性；
+
+    ![](./Res/ReadMe_Res/29_PublicVariables.png)
+
+    ![](./Res/ReadMe_Res/30.png)
+
+3. 该项目中会创建一个 WBP_Overlay 来包含其他 Widget，我们还会创建一个 HUD（AuraHUD），在 HUD 中添加 WBP_Overlay 到视口（Viewport）中；
+   
+   > 不使用 Canvas Panel 效率更高，如果不需要尽量不要添加；
+
+
