@@ -444,5 +444,49 @@ protected:
 
 4. 可以在 AAuraCharacter::InitAbilityActorInfo() 中初始化 OverlayWidget， AuraHUD->InitOverlay，这时我们需要的关键数据都已经用有效数据初始化了；
    我们在 HUD 中存储 OverlayWidgetController；
+   
+   > 项目中，UOverlayWidgetController 的基类是 UAuraWidgetController，我们在 HUD 中保存 WidgetController，让其作为交互的中间件；
 
+5. 我们在 WidgetController 中创建声明几个委托，我们希望它是**动态多播**的；
+   因为我想在蓝图中将事件分配给它们，并且会有多个 Widget 想要绑定到这些委托以便更新它们；
 
+   > 这个委托的名称我们约定以 F 开头
+
+    ```cpp
+    // OverlayWidgetController.h
+    // -------------------------
+    DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnHealthChangedSignature, float, NewHealth);
+    DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnMaxHealthChangedSignature, float, NewMaxHealth);
+
+    UCLASS(BlueprintType, Blueprintable)
+    class AURA_API UOverlayWidgetController : public UAuraWidgetController
+    {
+        GENERATED_BODY()
+        
+    public:
+        /** 该函数将在 AAuraHUD::InitOverlay 中 OverlayWidget 设置了 WidgetController 之后调用 */
+        virtual void BroadcastInitialValues() override;
+
+        UPROPERTY(BlueprintAssignable, Category = "GAS|Attributes")
+        FOnHealthChangedSignature OnHealthChanged;
+
+        UPROPERTY(BlueprintAssignable, Category = "GAS|Attributes")
+        FOnMaxHealthChangedSignature OnMaxHealthChanged;
+    };
+
+    // OverlayWidgetController.cpp
+    // ---------------------------
+    void UOverlayWidgetController::BroadcastInitialValues()
+    {
+        Super::BroadcastInitialValues();
+
+        const UAuraAttributeSet* AuraAttributeSet = Cast<UAuraAttributeSet>(AttributeSet);
+        
+        OnHealthChanged.Broadcast(AuraAttributeSet->GetHealth());
+        OnMaxHealthChanged.Broadcast(AuraAttributeSet->GetMaxHealth());
+    }
+    ```
+
+   ![](./Res/ReadMe_Res/31_WidgetControllerSet.png)
+
+   ![](./Res/ReadMe_Res/32.png)

@@ -44,6 +44,9 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void SetWidgetControllerParams(const FWidgetControllerParams& WCParams);
 
+	/** 该函数将在 AAuraHUD::InitOverlay 中 OverlayWidget 设置了 WidgetController 之后调用 */
+	virtual void BroadcastInitialValues();
+
 protected:
 	/** WidgetContoller 从下面这4个关键变量中获取数据 */
 	UPROPERTY(BlueprintReadOnly, Category = "WidgetController")
