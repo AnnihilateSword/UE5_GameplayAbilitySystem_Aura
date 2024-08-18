@@ -412,3 +412,22 @@ protected:
 };
 ```
 
+## Remarks
+
+1. 在 `Event Pre Construct` 中设置一些变量，可以立即在 Designer 中 Preview：
+    > 例如设置 Size Box 大小
+
+    ![](./Res/ReadMe_Res/23_UserWidget_PreConstruct.png)
+
+    ![](./Res/ReadMe_Res/24_UserWidget_PreConstruct.png)
+
+2. Globe ProgressBar 示例（血条和蓝条的基类）
+
+    ![](./Res/ReadMe_Res/25_ProgressBar.png)
+
+    ![](./Res/ReadMe_Res/26.png)
+
+    ![](./Res/ReadMe_Res/27.png)
+
+    ![](./Res/ReadMe_Res/28_SetPadding.png)
+
