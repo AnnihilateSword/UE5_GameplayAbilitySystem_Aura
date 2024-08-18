@@ -215,29 +215,17 @@
         UAuraAttributeSet();
         virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const;
 
-        UPROPERTY(ReplicatedUsing = OnRep_Health)
+        UPROPERTY(BlueprintReadOnly, ReplicatedUsing = OnRep_Health, Category = "Vital Attributes")
         FGameplayAttributeData Health;
 
-        UPROPERTY(ReplicatedUsing = OnRep_MaxHealth)
+        UPROPERTY(BlueprintReadOnly, ReplicatedUsing = OnRep_MaxHealth, Category = "Vital Attributes")
         FGameplayAttributeData MaxHealth;
-
-        UPROPERTY(ReplicatedUsing = OnRep_Mana)
-        FGameplayAttributeData Mana;
-
-        UPROPERTY(ReplicatedUsing = OnRep_MaxMana)
-        FGameplayAttributeData MaxMana;
 
         UFUNCTION()
         void OnRep_Health(const FGameplayAttributeData& OldHealth) const;
 
         UFUNCTION()
         void OnRep_MaxHealth(const FGameplayAttributeData& OldMaxHealth) const;
-
-        UFUNCTION()
-        void OnRep_Mana(const FGameplayAttributeData& OldMana) const;
-
-        UFUNCTION()
-        void OnRep_MaxMana(const FGameplayAttributeData& OldMaxMana) const;
     };
     ```
 
@@ -260,8 +248,6 @@
         */
         DOREPLIFETIME_CONDITION_NOTIFY(UAuraAttributeSet, Health, COND_None, REPNOTIFY_Always);
         DOREPLIFETIME_CONDITION_NOTIFY(UAuraAttributeSet, MaxHealth, COND_None, REPNOTIFY_Always);
-        DOREPLIFETIME_CONDITION_NOTIFY(UAuraAttributeSet, Mana, COND_None, REPNOTIFY_Always);
-        DOREPLIFETIME_CONDITION_NOTIFY(UAuraAttributeSet, MaxMana, COND_None, REPNOTIFY_Always);
     }
 
     void UAuraAttributeSet::OnRep_Health(const FGameplayAttributeData& OldHealth) const
@@ -274,15 +260,68 @@
     {
         GAMEPLAYATTRIBUTE_REPNOTIFY(UAuraAttributeSet, MaxHealth, OldMaxHealth);
     }
+    ```
 
-    void UAuraAttributeSet::OnRep_Mana(const FGameplayAttributeData& OldMana) const
-    {
-        GAMEPLAYATTRIBUTE_REPNOTIFY(UAuraAttributeSet, Mana, OldMana);
-    }
+6. 设置一些访问器函数来检索和设置我们属性集中的属性，即使我们通常不从代码中设置它们（一般直接使用 Gameplay Effects），但可以了解一下如何使用，我们可以使用引擎内置的宏，也可以自己创建：
+    
+    ```cpp
+    /**
+    * This defines a set of helper functions for accessing and initializing attributes, to avoid having to manually write these functions.
+    * It would creates the following functions, for attribute Health
+    *
+    *	static FGameplayAttribute UMyHealthSet::GetHealthAttribute();
+    *	FORCEINLINE float UMyHealthSet::GetHealth() const;
+    *	FORCEINLINE void UMyHealthSet::SetHealth(float NewVal);
+    *	FORCEINLINE void UMyHealthSet::InitHealth(float NewVal);
+    *
+    * To use this in your game you can define something like this, and then add game-specific functions as necessary:
+    * 
+    *	#define ATTRIBUTE_ACCESSORS(ClassName, PropertyName) \
+    *	GAMEPLAYATTRIBUTE_PROPERTY_GETTER(ClassName, PropertyName) \
+    *	GAMEPLAYATTRIBUTE_VALUE_GETTER(PropertyName) \
+    *	GAMEPLAYATTRIBUTE_VALUE_SETTER(PropertyName) \
+    *	GAMEPLAYATTRIBUTE_VALUE_INITTER(PropertyName)
+    * 
+    *	ATTRIBUTE_ACCESSORS(UMyHealthSet, Health)
+    */
+    ```
 
-    void UAuraAttributeSet::OnRep_MaxMana(const FGameplayAttributeData& OldMaxMana) const
+    不必理解宏是怎么做到的，这就是宏创造的魔法（有能力了后面再看懂也没事，现在看注释知道如何使用即可）
+
+    可以在你的属性集中定义下面的宏，它帮我们创建了很多有用的访问器函数：
+    ```cpp
+    #define ATTRIBUTE_ACCESSORS(ClassName, PropertyName) \
+        GAMEPLAYATTRIBUTE_PROPERTY_GETTER(ClassName, PropertyName) \
+        GAMEPLAYATTRIBUTE_VALUE_GETTER(PropertyName) \
+        GAMEPLAYATTRIBUTE_VALUE_SETTER(PropertyName) \
+        GAMEPLAYATTRIBUTE_VALUE_INITTER(PropertyName)
+    ```
+    
+    > 这会为我们定义很多有用的构造器函数
+
+    **不过我们一般不使用这些函数来更改属性，我们可以，但我们通常更喜欢使用游戏效果（Gameplay Effects），因为这些效果是可以预测的。**
+
+7. 在游戏运行中，用波浪键打开控制台，输入 `showdebug abilitysystem` 可以打开 **ability system 调试**；
+   > 它显示 Avatar，Owner，OwnedTags ... 很多有用的调制信息，可以按 PageUp 和 PageDown 来切换目标
+   
+   ![](./Res/ReadMe_Res/19_ShowDebug_AbilitySystem.png)
+
+8. 我们经常希望世界中某种可拾取的物品以某种方式来影响我们的属性，
+   我们现在还没有学习 Gameplay Effects，所以我们会创建一个通用的 EffectActor。直接更改属性，我们将看到**局限性（我们需要从能力系统组件获取属性集并转换成我们想要的类型，而且这种方式得到的结果是 const 类型的属性集，这也是 GAS 为了保护所作的事，我们不应该像这样在属性集上设置属性，属性集应该设置自己的默认值，或在游戏效果中响应**）；
+   一旦我们使用 Gameplay Effects，如果我们想改变某个属性的某个值，我们就不必关心属性集的类型是什么。
+
+    ```cpp
+    void AAuraEffectActor::OnBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
     {
-        GAMEPLAYATTRIBUTE_REPNOTIFY(UAuraAttributeSet, MaxMana, OldMaxMana);
+        if (IAbilitySystemInterface* ASInterface = Cast<IAbilitySystemInterface>(OtherActor))
+        {
+            const UAuraAttributeSet* AuraAttributeSet = Cast<UAuraAttributeSet>(ASInterface->GetAbilitySystemComponent()->GetAttributeSet(UAuraAttributeSet::StaticClass()));
+
+            UAuraAttributeSet* MutableAuraAttributeSet = const_cast<UAuraAttributeSet*>(AuraAttributeSet);
+            MutableAuraAttributeSet->SetHealth(AuraAttributeSet->GetHealth() + 25.0f);
+            Destroy();
+        }
     }
     ```
 
+    > 最大的问题是我们的 AuraEffectActor 非常非常具体。它将健康值改变 25。像 EffectActor 这样的东西应该能够以多种方式将任何效果应用于任何属性。它应该是通用的和可重用的，并且不应该违反任何指针的常量性。
