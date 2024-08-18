@@ -28,7 +28,7 @@ void AAuraEffectActor::BeginPlay()
 
 void AAuraEffectActor::OnBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
-	//TODO: Change this to apply a Gameplay Effect. For now, using const_cast as a hack!
+	//TODO：将此更改为应用Gameplay Effect。现在，使用 const_cast 作为 hack！
 	if (IAbilitySystemInterface* ASInterface = Cast<IAbilitySystemInterface>(OtherActor))
 	{
 		const UAuraAttributeSet* AuraAttributeSet = Cast<UAuraAttributeSet>(ASInterface->GetAbilitySystemComponent()->GetAttributeSet(UAuraAttributeSet::StaticClass()));

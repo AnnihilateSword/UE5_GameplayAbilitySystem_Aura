@@ -313,6 +313,7 @@
     ```cpp
     void AAuraEffectActor::OnBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
     {
+        //TODO：将此更改为应用Gameplay Effect。现在，使用 const_cast 作为 hack！
         if (IAbilitySystemInterface* ASInterface = Cast<IAbilitySystemInterface>(OtherActor))
         {
             const UAuraAttributeSet* AuraAttributeSet = Cast<UAuraAttributeSet>(ASInterface->GetAbilitySystemComponent()->GetAttributeSet(UAuraAttributeSet::StaticClass()));
@@ -325,3 +326,89 @@
     ```
 
     > 最大的问题是我们的 AuraEffectActor 非常非常具体。它将健康值改变 25。像 EffectActor 这样的东西应该能够以多种方式将任何效果应用于任何属性。它应该是通用的和可重用的，并且不应该违反任何指针的常量性。
+
+# 第4节：RPG Game UI
+
+> widget 对象应该如何获取这些数据呢？小部件对象可以通过多种方式设法深入游戏代码，检索对角色控制器、玩家状态、能力系统组件的指针和引用，属性集并直接访问所需的所有数据，但这是最好的方法吗？
+经验丰富的开发人员会如何做呢？3A游戏是如何做到的？如何以可扩展和可维护的方式做到这一点？
+
+![](./Res/ReadMe_Res/20_MVC.png)
+
+从模型获取数据到视图是我们需要考虑的任务。这可以通过多种方式完成，但组织此操作的一个好方法是构建某个控制器类，它可以处理从模型检索数据并将其广播到视图。该类不仅可以负责数据的检索，还可以负责任何计算或算法；
+
+现在我们不是在讨论引擎中的控制器或玩家控制器类。这些旨在占有和控制棋子。我们讨论的是一个控制器类，用于将数据驱动到视图。因此，出于这个原因，我们将其称为小部件控制器（Widget Controller），它可能只是继承自 UObject；
+
+这意味着视图可以简单地关注数据应该如何接收来自任何广播的数据；但视图可能包含玩家可以与之交互的小部件，例如按钮。当玩家单击按钮时，该操作可能会导致模型发生一些变化，例如增加或赋予玩家新的能力。因此，控制器的工作也能促进小部件与玩家交互所产生的操作，导致模型发生变化。换句话说，**控制器是视图和模型之间的中间人**；
+
+> 因此模型可以通过模型视图控制器（MVC）架构进行更改，我们有三个单独的关注点，并且每个域都与其他域隔离。这使得系统高度模块化。它可以防止我们对依赖项进行硬编码，从而使系统变得僵化。我们的模型不应该需要关心使用哪些控制器或小部件来表示他们的数据。
+
+![](./Res/ReadMe_Res/21_MVC.png)
+
+- 控制器本身依赖于模型中的类；
+- 控制器永远不需要知道哪些小部件正在接收向它们广播的数据；
+- 模型依赖于控制器的小部件。如果我们维护这些单向依赖关系，那么模型就可以更改其小部件控制器；
+
+![](./Res/ReadMe_Res/22.png)
+
+> HUD是我们用来处理小部件的类。小部件是我们以某种方式添加到视窗中的实际UI元素。
+
+## 简单示例
+
+Widget 中会包含 WidgetController；
+
+WidgetController 不会知道它与哪些 Widget 相关联，但 Widget 本身知道它们的 WidgetController 是什么；WidgetController 会获取数据然后广播到 Widget；
+
+```cpp
+// AuraUserWidget.h
+// ----------------
+UCLASS()
+class AURA_API UAuraUserWidget : public UUserWidget
+{
+	GENERATED_BODY()
+	
+public:
+	UFUNCTION(BlueprintCallable)
+	void SetWidgetController(UObject* InWidgetController);
+
+	UPROPERTY(BlueprintReadOnly)
+	TObjectPtr<UObject> WidgetController;
+
+protected:
+	/** 每当我们为给定的 Widget 设置 WidgetController 时，我们也会调用此函数 */
+	UFUNCTION(BlueprintImplementableEvent)
+	void WidgetControllerSet();
+};
+
+// AuraUserWidget.cpp
+// ------------------
+void UAuraUserWidget::SetWidgetController(UObject* InWidgetController)
+{
+	WidgetController = InWidgetController;
+	WidgetControllerSet();
+}
+```
+
+```cpp
+// AuraWidgetController.h
+// ----------------------
+UCLASS()
+class AURA_API UAuraWidgetController : public UObject
+{
+	GENERATED_BODY()
+	
+protected:
+	/** WidgetContoller 从下面这4个对象中获取数据 */
+	UPROPERTY(BlueprintReadOnly, Category = "WidgetController")
+	TObjectPtr<APlayerController> PlayerController;
+
+	UPROPERTY(BlueprintReadOnly, Category = "WidgetController")
+	TObjectPtr<APlayerState> PlayerState;
+
+	UPROPERTY(BlueprintReadOnly, Category = "WidgetController")
+	TObjectPtr<UAbilitySystemComponent> AbilitySystemComponent;
+
+	UPROPERTY(BlueprintReadOnly, Category = "WidgetController")
+	TObjectPtr<UAttributeSet> AttributeSet;
+};
+```
+
