@@ -538,3 +538,5 @@ protected:
         return OverlayWidgetController;
     }
     ```
+7. 在该项目中如果添加新的属性，基本需要更改：UAuraAttributeSet，UOverlayWidgetController
+   这两个类是很好的参考
