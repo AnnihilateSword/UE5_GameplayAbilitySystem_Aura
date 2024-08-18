@@ -490,3 +490,51 @@ protected:
    ![](./Res/ReadMe_Res/31_WidgetControllerSet.png)
 
    ![](./Res/ReadMe_Res/32.png)
+
+6. 监听属性值更改
+   了解函数 AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate
+
+    ```cpp
+    // 参考
+
+    // OverlayWidgetController.cpp
+    // ---------------------------
+    void UOverlayWidgetController::BindCallbacksToDependences()
+    {
+        Super::BindCallbacksToDependences();
+
+        const UAuraAttributeSet* AuraAttributeSet = Cast<UAuraAttributeSet>(AttributeSet);
+
+        /** Bind Callbacks */
+        AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(
+            AuraAttributeSet->GetHealthAttribute()).AddUObject(this, &UOverlayWidgetController::HealthChanged);
+        AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(
+            AuraAttributeSet->GetMaxHealthAttribute()).AddUObject(this, &UOverlayWidgetController::MaxHealthChanged);
+    }
+
+    void UOverlayWidgetController::HealthChanged(const FOnAttributeChangeData& Data) const
+    {
+        OnHealthChanged.Broadcast(Data.NewValue);
+    }
+
+    void UOverlayWidgetController::MaxHealthChanged(const FOnAttributeChangeData& Data) const
+    {
+        OnMaxHealthChanged.Broadcast(Data.NewValue);
+    }
+
+    // AuraHUD.cpp
+    // -----------
+    UOverlayWidgetController* AAuraHUD::GetOverlayWidgetController(const FWidgetControllerParams& WCParams)
+    {
+        if (OverlayWidgetController == nullptr)
+        {
+            OverlayWidgetController = NewObject<UOverlayWidgetController>(this, OverlayWidgetControllerClass);
+            OverlayWidgetController->SetWidgetControllerParams(WCParams);
+
+            // 为所有依赖 Widget 绑定回调
+            OverlayWidgetController->BindCallbacksToDependences();
+            return OverlayWidgetController;
+        }
+        return OverlayWidgetController;
+    }
+    ```
