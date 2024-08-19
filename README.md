@@ -56,7 +56,7 @@
 7.  使用自定义深度注意有没有设置 ProjectSettings/Rendering->CustomDepth-StencilPass 为 Enabled with Stencil，默认 Enabled 是禁用 Stencil 的；
     不熟悉高亮材质制作思路的可以了解下 Content/Assets/Materials/PP_Highlight
 
-# 第2节：介绍GAS系统（Gameplay Ability System）
+# 第2节：介绍GAS系统 (Gameplay Ability System)
 
 官方文档：👉[Gameplay Ability System](https://dev.epicgames.com/documentation/en-us/unreal-engine/gameplay-ability-system-for-unreal-engine)
 
@@ -174,7 +174,7 @@
    
    > 默认情况下。PlayerState 的所有者会自动设置为 Controller，因此我们实际上不需要执行任何操作。
 
-# 第3节：属性（Atrributes）
+# 第3节：属性 (Atrributes)
 
 1. 在构造函数中，当我们在 AbilitySystemComponent 旁边构建 AttributeSet 时，它会自动注册到 AbilitySystemComponent 中。AbilitySystemComponent 可以访问它以及注册的任何其他 AttributeSet；
    
@@ -539,4 +539,22 @@ protected:
     }
     ```
 7. 在该项目中如果添加新的属性，基本需要更改：UAuraAttributeSet，UOverlayWidgetController
-   这两个类是很好的参考
+   这两个类是很好的参考；
+
+8. Widgets 依赖于 WidgetController，而 WidgetController 又依赖于 Model 中的类；
+
+# 第5节：游戏效果 (Gameplay Effects)
+
+什么是 Gameplay Effects？
+
+- Gameplay Effects 是一个 UGameplayEffect 对象，我们使用 UGameplayEffect 来更改属性 (Attributes) 和 游戏标签 (Gameplay Tags)；
+- Gameplay Effects 仅是数据 (Data)，我们不给它添加逻辑，通过 Modifiers 和 Executions 改变属性 (Attributes)；
+- 其中最强大的方法就是使用 Executions；
+
+![](./Res/ReadMe_Res/33_GameplayEffects.png)
+
+现在可以直接应用游戏效果，但通常我们会创建它们的更轻量级版本 GameplayEffectSpec；
+
+这种规范的概念在 Gas 中很常见，是一种优化形式。该规范包含执行修改所需的基本信息以及唯一实际的信息
+
+![](./Res/ReadMe_Res/34_GameplayEffectSpec.png)
