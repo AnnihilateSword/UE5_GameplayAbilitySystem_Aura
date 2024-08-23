@@ -581,16 +581,41 @@ protected:
     }
     ```
 
-- Instance Gameplay Effects
-  - 一般我们会永久改变基础值（Base Value）
-- Duration / Infinite Gameplay Effects
-  - 一般会改变当前值（Current Value），时间到了就会撤回修改
-- Period Gameplay Effects
-  - 持续时间和无限效果可以转换为周期性效果（只需将其 period 值改为非零即可），定期对属性进行修改；
-  - 不过与 Duration / Infinite 效果不同的是它会永久更改基础值（Base Value）；
-  - 例如将周期设为 0.01，每 0.01s 增加 Health 0.1，会得到更平滑的增长，我们知道 GAS 帮我们做了在网络中的预测，可能使用了某种技巧，比如插值；
-  - 当设置周期为非零时，会有 Execute Periodic Effect on Application 供选择，是否一开始就应用更改；
-  - 还可以设置 Periodic Inhibition Policy，根据特定技能系统组件的标签，可以阻止或抑制游戏效果；
+   - Instance Gameplay Effects
+     - 一般我们会永久改变基础值（Base Value）
+   - Duration / Infinite Gameplay Effects
+     - 一般会改变当前值（Current Value），时间到了就会撤回修改
+   - Period Gameplay Effects
+     - 持续时间和无限效果可以转换为周期性效果（只需将其 period 值改为非零即可），定期对属性进行修改；
+     - 不过与 Duration / Infinite 效果不同的是它会永久更改基础值（Base Value）；
+     - 例如将周期设为 0.01，每 0.01s 增加 Health 0.1，会得到更平滑的增长，我们知道 GAS 帮我们做了在网络中的预测，可能使用了某种技巧，比如插值；
+     - 当设置周期为非零时，会有 Execute Periodic Effect on Application 供选择，是否一开始就应用更改；
+     - 还可以设置 Periodic Inhibition Policy，根据特定技能系统组件的标签，可以阻止或抑制游戏效果；
 
-2. Gameplay Effect 中的 Stacking（堆叠）
+<br>
+
+2. **Gameplay Effect 中的 Stacking（堆叠）**
    Stacking 使我们能够选择当我们有多种相同类型的游戏效果时会发生什么
+
+    - Stacking Type
+      - None
+      - Aggregate by Source
+        - 例如以设置 `Stack Limit Count = 2` 为例：
+        - 这个选项意味着应用于目标的每个 Source 最多有 2个堆栈（这里源实际指的是导致这种情况的能力系统组件）
+        - ![](./Res/ReadMe_Res/35_Effect_Stacking.png)
+      - Aggregate by Target
+        - 这个选项意味着对每个 Source 执行
+        - 例如以设置 `Stack Limit Count = 2` 为例：
+        - 这个选项意味着作用的 Target 最多有 2个堆栈
+        - ![](./Res/ReadMe_Res/36_Effect_Stacking_Target.png)
+      > 使用 Stacking 的时候，需要注意 Period 的时间设置，如果周期太多可能会有刷新的问题（结果会有误差）
+    
+    - Stack Duration Refresh Policy
+      - Refresh on Successful Application
+        在成功应用程序上刷新时，每次我们在其上堆叠另一个应用程序时，都会重置持续时间
+      - Never Refresh
+    - Stack Period Reset Policy
+      - Clear Entire Stack
+      - Remove Single Stack and Refresh Duration
+      - Refresh Duration
+
