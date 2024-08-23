@@ -558,3 +558,33 @@ protected:
 这种规范的概念在 Gas 中很常见，是一种优化形式。该规范包含执行修改所需的基本信息以及唯一实际的信息
 
 ![](./Res/ReadMe_Res/34_GameplayEffectSpec.png)
+
+1. 简单示例：
+   
+    ```cpp
+    void AAuraEffectActor::ApplyEffectToTarget(AActor* TargetActor, TSubclassOf<UGameplayEffect> GameplayEffectClass)
+    {
+        /**
+        * 1. 从指定 Actor 获取 ASC；
+        * 2. ASC 创建 EffectContext 并添加 SourceObject；
+        * 3. ASC 使用 EffectContext 和 GameplayEffectClass 创建 GameplayEffectSpecHandle；
+        * 4. ASC 调用 ApplyGameplayEffectSpecToSelf 应用 Effect；
+        */
+        UAbilitySystemComponent* TargetASC = UAbilitySystemBlueprintLibrary::GetAbilitySystemComponent(TargetActor);
+        if (TargetASC == nullptr) return;
+
+        check(GameplayEffectClass);
+        FGameplayEffectContextHandle EffectContextHandle = TargetASC->MakeEffectContext();
+        EffectContextHandle.AddSourceObject(this);
+        const FGameplayEffectSpecHandle GameplayEffectSpecHandle = TargetASC->MakeOutgoingSpec(GameplayEffectClass, 1.0f, EffectContextHandle);
+        TargetASC->ApplyGameplayEffectSpecToSelf(*GameplayEffectSpecHandle.Data.Get());
+    }
+    ```
+
+- Instance Gameplay Effects
+  - 一般我们会永久改变基础值（Base Value）
+- Duration / Infinite Gameplay Effects
+  - 一般会改变当前值（Current Value），时间到了就会撤回修改
+- Period Gameplay Effects
+  - 持续时间和无限效果可以转换为周期性效果（只需将其 period 值改为非零即可），定期对属性进行修改
+  - 不过与 Duration / Infinite 效果不同的是它会永久更改基础值（Base Value）
