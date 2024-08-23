@@ -586,5 +586,11 @@ protected:
 - Duration / Infinite Gameplay Effects
   - 一般会改变当前值（Current Value），时间到了就会撤回修改
 - Period Gameplay Effects
-  - 持续时间和无限效果可以转换为周期性效果（只需将其 period 值改为非零即可），定期对属性进行修改
-  - 不过与 Duration / Infinite 效果不同的是它会永久更改基础值（Base Value）
+  - 持续时间和无限效果可以转换为周期性效果（只需将其 period 值改为非零即可），定期对属性进行修改；
+  - 不过与 Duration / Infinite 效果不同的是它会永久更改基础值（Base Value）；
+  - 例如将周期设为 0.01，每 0.01s 增加 Health 0.1，会得到更平滑的增长，我们知道 GAS 帮我们做了在网络中的预测，可能使用了某种技巧，比如插值；
+  - 当设置周期为非零时，会有 Execute Periodic Effect on Application 供选择，是否一开始就应用更改；
+  - 还可以设置 Periodic Inhibition Policy，根据特定技能系统组件的标签，可以阻止或抑制游戏效果；
+
+2. Gameplay Effect 中的 Stacking（堆叠）
+   Stacking 使我们能够选择当我们有多种相同类型的游戏效果时会发生什么
