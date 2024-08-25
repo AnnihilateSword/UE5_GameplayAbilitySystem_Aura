@@ -559,63 +559,88 @@ protected:
 
 ![](./Res/ReadMe_Res/34_GameplayEffectSpec.png)
 
-1. 简单示例：
+## 简单示例
    
-    ```cpp
-    void AAuraEffectActor::ApplyEffectToTarget(AActor* TargetActor, TSubclassOf<UGameplayEffect> GameplayEffectClass)
-    {
-        /**
-        * 1. 从指定 Actor 获取 ASC；
-        * 2. ASC 创建 EffectContext 并添加 SourceObject；
-        * 3. ASC 使用 EffectContext 和 GameplayEffectClass 创建 GameplayEffectSpecHandle；
-        * 4. ASC 调用 ApplyGameplayEffectSpecToSelf 应用 Effect；
-        */
-        UAbilitySystemComponent* TargetASC = UAbilitySystemBlueprintLibrary::GetAbilitySystemComponent(TargetActor);
-        if (TargetASC == nullptr) return;
+```cpp
+void AAuraEffectActor::ApplyEffectToTarget(AActor* TargetActor, TSubclassOf<UGameplayEffect> GameplayEffectClass)
+{
+    /**
+    * 1. 从指定 Actor 获取 ASC；
+    * 2. ASC 创建 EffectContext 并添加 SourceObject；
+    * 3. ASC 使用 EffectContext 和 GameplayEffectClass 创建 GameplayEffectSpecHandle；
+    * 4. ASC 调用 ApplyGameplayEffectSpecToSelf 应用 Effect；
+    */
+    UAbilitySystemComponent* TargetASC = UAbilitySystemBlueprintLibrary::GetAbilitySystemComponent(TargetActor);
+    if (TargetASC == nullptr) return;
 
-        check(GameplayEffectClass);
-        FGameplayEffectContextHandle EffectContextHandle = TargetASC->MakeEffectContext();
-        EffectContextHandle.AddSourceObject(this);
-        const FGameplayEffectSpecHandle GameplayEffectSpecHandle = TargetASC->MakeOutgoingSpec(GameplayEffectClass, 1.0f, EffectContextHandle);
-        TargetASC->ApplyGameplayEffectSpecToSelf(*GameplayEffectSpecHandle.Data.Get());
-    }
-    ```
+    check(GameplayEffectClass);
+    FGameplayEffectContextHandle EffectContextHandle = TargetASC->MakeEffectContext();
+    EffectContextHandle.AddSourceObject(this);
+    const FGameplayEffectSpecHandle GameplayEffectSpecHandle = TargetASC->MakeOutgoingSpec(GameplayEffectClass, 1.0f, EffectContextHandle);
+    TargetASC->ApplyGameplayEffectSpecToSelf(*GameplayEffectSpecHandle.Data.Get());
+}
+```
 
-   - Instance Gameplay Effects
-     - 一般我们会永久改变基础值（Base Value）
-   - Duration / Infinite Gameplay Effects
-     - 一般会改变当前值（Current Value），时间到了就会撤回修改
-   - Period Gameplay Effects
-     - 持续时间和无限效果可以转换为周期性效果（只需将其 period 值改为非零即可），定期对属性进行修改；
-     - 不过与 Duration / Infinite 效果不同的是它会永久更改基础值（Base Value）；
-     - 例如将周期设为 0.01，每 0.01s 增加 Health 0.1，会得到更平滑的增长，我们知道 GAS 帮我们做了在网络中的预测，可能使用了某种技巧，比如插值；
-     - 当设置周期为非零时，会有 Execute Periodic Effect on Application 供选择，是否一开始就应用更改；
-     - 还可以设置 Periodic Inhibition Policy，根据特定技能系统组件的标签，可以阻止或抑制游戏效果；
+ - Instance Gameplay Effects
+   - 一般我们会永久改变基础值（Base Value）
+ - Duration / Infinite Gameplay Effects
+   - 一般会改变当前值（Current Value），时间到了就会撤回修改
+ - Period Gameplay Effects
+   - 持续时间和无限效果可以转换为周期性效果（只需将其 period 值改为非零即可），定期对属性进行修改；
+   - 不过与 Duration / Infinite 效果不同的是它会永久更改基础值（Base Value）；
+   - 例如将周期设为 0.01，每 0.01s 增加 Health 0.1，会得到更平滑的增长，我们知道 GAS 帮我们做了在网络中的预测，可能使用了某种技巧，比如插值；
+   - 当设置周期为非零时，会有 Execute Periodic Effect on Application 供选择，是否一开始就应用更改；
+   - 还可以设置 Periodic Inhibition Policy，根据特定技能系统组件的标签，可以阻止或抑制游戏效果；
 
 <br>
 
-2. **Gameplay Effect 中的 Stacking（堆叠）**
-   Stacking 使我们能够选择当我们有多种相同类型的游戏效果时会发生什么
+## 堆叠 (Stacking)
 
-    - Stacking Type
-      - None
-      - Aggregate by Source
-        - 例如以设置 `Stack Limit Count = 2` 为例：
-        - 这个选项意味着应用于目标的每个 Source 最多有 2个堆栈（这里源实际指的是导致这种情况的能力系统组件）
-        - ![](./Res/ReadMe_Res/35_Effect_Stacking.png)
-      - Aggregate by Target
-        - 这个选项意味着对每个 Source 执行
-        - 例如以设置 `Stack Limit Count = 2` 为例：
-        - 这个选项意味着作用的 Target 最多有 2个堆栈
-        - ![](./Res/ReadMe_Res/36_Effect_Stacking_Target.png)
-      > 使用 Stacking 的时候，需要注意 Period 的时间设置，如果周期太多可能会有刷新的问题（结果会有误差）
-    
-    - Stack Duration Refresh Policy
-      - Refresh on Successful Application
-        在成功应用程序上刷新时，每次我们在其上堆叠另一个应用程序时，都会重置持续时间
-      - Never Refresh
-    - Stack Period Reset Policy
-      - Clear Entire Stack
-      - Remove Single Stack and Refresh Duration
-      - Refresh Duration
+Stacking 使我们能够选择当我们有多种相同类型的游戏效果时会发生什么
+> 想想武器大师的被动（LOL）和连续嗑几瓶药水（LOL），这也可以用堆叠做到
+
+- **Stacking Type**
+    - **None（默认值，比如吃了5个血瓶，会获得5次回血，且这5个血瓶的效果互相独立）**
+    - **Aggregate by Source**
+    - 例如以设置 `Stack Limit Count = 2` 为例：
+    - 这个选项意味着应用于目标的每个 Source 最多有 2个堆栈（这里源实际指的是导致这种情况的能力系统组件）
+    - ![](./Res/ReadMe_Res/35_Effect_Stacking.png)
+    - **Aggregate by Target**
+    - 这个选项意味着对每个 Source 执行
+    - 例如以设置 `Stack Limit Count = 2` 为例：
+    - 这个选项意味着作用的 Target 最多有 2个堆栈
+    - ![](./Res/ReadMe_Res/36_Effect_Stacking_Target.png)
+    > 使用 Stacking 的时候，需要注意 Period 的时间设置，如果周期太多可能会有刷新的问题（结果会有误差）
+
+- **Stack Duration Refresh Policy**
+    - Refresh on Successful Application
+    在成功 Application 上刷新时，每次我们在其上堆叠另一个 Application 时，都会重置效果的持续时间
+    - Never Refresh
+    即使叠加效果，也不会刷新
+- **Stack Period Reset Policy**
+    - Refresh on Successful Application
+    - Never Refresh
+
+    > Stack Duration Refresh Policy 和 Stack Period Reset Policy 要配合使用，当前者设置为 Never Refresh，后者一般也会设置为 Never Refresh
+
+- **Stack Expiration Policy**
+    - Clear Entire Stack
+    结束时清除所有层数
+    - Remove Single Stack and Refresh Duration
+    结束时减少一层，然后重新经历一个Duration，一直持续到层数减为0
+    - Refresh Duration
+    结束时再次刷新Duration，这相当于无限Duration，可以通过调用 `OnStackCountChange` 来处理层数，可以达到 Duration 结束时减少两层并刷新 Duration 这样复杂的效果。
+    ```cpp
+    void FActiveGameplayEffectsContainer::OnStackCountChange(FActiveGameplayEffect& ActiveEffect, int32 OldStackCount, int32 NewStackCount)
+    ```
+    **上面的属性用来控制效果叠加，那么如果效果叠加满了溢出了怎么办，官方也有解决方案。
+就是 Overflow 属性的配置**
+
+- **Overflow**
+    - **Overflow Effects**
+    溢出时会触发的效果
+    - **Deny Overflow Application** 
+    阻止溢出效果产生
+    - **Clear Stack on Overflow**
+    如果勾选了阻止溢出，会出现这个选项，当溢出时是否清除效果
 
