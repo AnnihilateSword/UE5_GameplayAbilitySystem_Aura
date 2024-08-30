@@ -560,7 +560,9 @@ protected:
 ![](./Res/ReadMe_Res/34_GameplayEffectSpec.png)
 
 ## 简单示例
-   
+
+> **UAbilitySystemBlueprintLibrary::GetAbilitySystemComponent** 可以方便的从 AActor 中获取 ASC
+
 ```cpp
 void AAuraEffectActor::ApplyEffectToTarget(AActor* TargetActor, TSubclassOf<UGameplayEffect> GameplayEffectClass)
 {
@@ -814,3 +816,85 @@ void UAuraAttributeSet::PreAttributeChange(const FGameplayAttribute& Attribute, 
 	}
 }
 ```
+
+## UAuraAttributeSet::PostGameplayEffectExecute【重要】
+
+这个函数是在游戏效果改变后执行的，**可以根据刚刚应用的效果访问大量信息**
+
+```cpp
+/** Called just before a GameplayEffect is executed to modify the base value of an attribute. No more changes can be made. */
+/** 在GameplayEffect执行之前调用，用于修改属性的基本值。不能再做任何更改（就是已经修改过了）。 */
+void UAuraAttributeSet::PostGameplayEffectExecute(const FGameplayEffectModCallbackData& Data)
+{
+	Super::PostGameplayEffectExecute(Data);
+
+	if (Data.EvaluatedData.Attribute == GetHealthAttribute())
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Health: %f"), GetHealth());
+		UE_LOG(LogTemp, Warning, TEXT("Magnitude: %f"), Data.EvaluatedData.Magnitude);
+	}
+}
+```
+
+![](./Res/ReadMe_Res/37_PostGameplayEffectExecute.png)
+
+![](./Res/ReadMe_Res/38.png)
+
+能获取到 AbilitySystemComponent 就可以获取 Owner 和 Avatar，还有很多有用的信息
+
+我们可以在这收集许多有用的数据，例如放入一个结构体中，这是一个很好的练习！
+
+## 为游戏效果添加曲线表（Curve Tables for Sacalable Floats）
+
+有时候可以不硬编码值
+
+> 很多 GAS 元素都有等级的概念，能力也有等级，游戏效果也有等级
+
+因此，曲线表使我们有选择根据等级按不同的值缩放幅度
+
+可以创建一个 Linear Curve Table（右键 Miscellaneous/CurveTable），曲线很简单，有点像 Excel 表格：
+
+可以点
+
+![](./Res/ReadMe_Res/39_CurveTable.png)
+
+![](./Res/ReadMe_Res/40.png)
+
+需要在曲线表中选择一条曲线，因为我们可能有多条曲线：
+
+![](./Res/ReadMe_Res/41.png)
+
+![](./Res/ReadMe_Res/42.png)
+
+他会乘上我们的基础缩放，例如 1级我们上面设置为 5.0 缩放，这里基础缩放是 25.0，所以这里结果是 125.0
+
+![](./Res/ReadMe_Res/43.png)
+
+### 示例
+
+例如我们使用表格可以为药水配置等级对应的缩放值，然后让 EffectActor 的等级是可编辑的：
+
+```cpp
+class AURA_API AAuraEffectActor
+{
+protected:
+    // EffectActor 的等级，不同等级 GameplayEffect 效果也不同
+    EEffectRemovalPolicy InfiniteEffectRemovalPolicy = EEffectRemovalPolicy::DoNotRemove;
+    float ActorLevel = 1.0f;
+};
+
+void AAuraEffectActor::ApplyEffectToTarget(AActor* TargetActor, TSubclassOf<UGameplayEffect> GameplayEffectClass)
+{
+	// ...
+
+	const FGameplayEffectSpecHandle EffectSpecHandle = TargetASC->MakeOutgoingSpec(GameplayEffectClass, ActorLevel, EffectContextHandle);
+
+    // ...
+}
+```
+
+> 我们也可以为 蓝药 和 血药 使用相同的曲线表格，一个曲线表格可以包含多条曲线，例如 HealingCurve 和 ManaCurve
+
+![](./Res/ReadMe_Res/44.png)
+
+![](./Res/ReadMe_Res/45.png)
