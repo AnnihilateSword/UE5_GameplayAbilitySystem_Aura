@@ -898,3 +898,61 @@ void AAuraEffectActor::ApplyEffectToTarget(AActor* TargetActor, TSubclassOf<UGam
 ![](./Res/ReadMe_Res/44.png)
 
 ![](./Res/ReadMe_Res/45.png)
+
+### Q&A
+
+![](./Res/ReadMe_Res/46_Q&A.png)
+
+![](./Res/ReadMe_Res/46_Q&A2.png)
+
+![](./Res/ReadMe_Res/46_Q&A3.png)
+
+# 第6节：游戏标签（Gameplay Tags）
+
+**Gameplay Tags 在 GAS 系统中至关重要，尽管它们确实独立于 GAS 系统。**
+
+- 游戏标签基本就是名称，它们具有 FGameplayTag 类型，并且已在 游戏标签管理器（Gameplay Tag Manager）中注册；
+- 游戏标签本质上是分层的，其中层次结构的每个级别都用点分隔，层级没有限制（1，2，3...层都可以）；
+- 为什么游戏标签如此出色？在某些情况下，我们不能使用 FString 或 FName 或 枚举 或 布尔值 吗？
+  - 游戏标签有许多固有品质，它们看起来很像字符串，事实上它们的核心是 FName，它们有一个名为 TagName 的成员变量，这是一个 FName 类型，但是它们的**层级性质**使它们让我们的代码更灵活；
+  - 可以比较两个标签是否完全相等或者部分相等（这在代码中可能很重要）；
+  - 游戏能力系统旨在在几乎每个类别中使用 Gameplay Tag，我们将标签赋予 Actor's AbilitySystemComponent，然后说该能力系统具有该标签，能力系统组件实现了一个称为 **IGameplayTagAssetInterface** 的接口（可以查看特定标签是否存在等信息），因为这是一个接口所以任何类都可以实现它；
+  - 类可以有多个 Gameplay Tag，我们需要将它们存储在某个容器中（现在我们不使用数组，相反我们使用 **Gameplay Tag Contanier**，它具有一些游戏标签特定功能和一些效率提升，**Gameplay Tag Contanier** 具有标签计数的概念，这意味对于容器中的单个标签你可以拥有多个实例，然后也能知道有多少个实例）
+
+![](./Res/ReadMe_Res/47_GameplayTags.png)
+
+> 游戏能力系统中的很多操作都依赖于 Gameplay Tags
+> 例如，AbilitySystemComponent 必须具有一些标签才能激活某个 GameplayAbility（游戏能力）
+> 这些只是使用标签的内置功能的几个示例，但可以使用标签，我们也可以用它们来识别输入 (Inputs)、能力 (Abilities)、属性 (Attributes)、伤害类型 (Damage Types)、增益和减益消息 (Buffs/Debuffs)，任何类型的数据 (Data) 或我们能想到的任何其他数据 (Anything you want)！
+
+## 如何在编辑器中创建标签（GameplayTags）
+
+![](./Res/ReadMe_Res/48_GameplayTagManager.png)
+
+我们可以创建一个 GameplayTagSource 和 GameplayTags，GameplayTags 和 GameplayTagSource（是一个 .ini 配置文件） 相关联
+
+![](./Res/ReadMe_Res/49.png)
+
+![](./Res/ReadMe_Res/50.png)
+
+![](./Res/ReadMe_Res/51_GameplayTags_ini.png)
+
+> 可以直接去配置文件中添加标签或注释
+
+## 从数据表（DataTable）中创建标签（GameplayTags）
+
+这种方式，我们必须先制作表格，然后将表格转换成游戏标签（GameplayTags）
+
+我们可以创建一个 DataTable（每次创建时我们都需要选择一个行结构，以便数据表知道什么字段位于给定行中），开启了GAS插件后，会默认提供一个 `GameplayTagTableRow`
+
+![](./Res/ReadMe_Res/52_GameplayTagTableRow.png)
+
+不过要小心，这里很容易出错
+
+![](./Res/ReadMe_Res/53.png)
+
+![](./Res/ReadMe_Res/54.png)
+
+![](./Res/ReadMe_Res/55.png)
+
+**这是一种添加标签很好的方式**，更好维护
