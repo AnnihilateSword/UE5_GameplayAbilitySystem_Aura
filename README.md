@@ -907,7 +907,7 @@ void AAuraEffectActor::ApplyEffectToTarget(AActor* TargetActor, TSubclassOf<UGam
 
 ![](./Res/ReadMe_Res/46_Q&A3.png)
 
-# 第6节：游戏标签（Gameplay Tags）
+# 第6节：游戏标签 (Gameplay Tags)
 
 **Gameplay Tags 在 GAS 系统中至关重要，尽管它们确实独立于 GAS 系统。**
 
@@ -925,7 +925,7 @@ void AAuraEffectActor::ApplyEffectToTarget(AActor* TargetActor, TSubclassOf<UGam
 > 例如，AbilitySystemComponent 必须具有一些标签才能激活某个 GameplayAbility（游戏能力）
 > 这些只是使用标签的内置功能的几个示例，但可以使用标签，我们也可以用它们来识别输入 (Inputs)、能力 (Abilities)、属性 (Attributes)、伤害类型 (Damage Types)、增益和减益消息 (Buffs/Debuffs)，任何类型的数据 (Data) 或我们能想到的任何其他数据 (Anything you want)！
 
-## 如何在编辑器中创建标签（GameplayTags）
+## 如何在编辑器中创建标签 (GameplayTags)
 
 ![](./Res/ReadMe_Res/48_GameplayTagManager.png)
 
@@ -939,7 +939,7 @@ void AAuraEffectActor::ApplyEffectToTarget(AActor* TargetActor, TSubclassOf<UGam
 
 > 可以直接去配置文件中添加标签或注释
 
-## 从数据表（DataTable）中创建标签（GameplayTags）
+## 从数据表（DataTable）中创建标签 (GameplayTags)
 
 这种方式，我们必须先制作表格，然后将表格转换成游戏标签（GameplayTags）
 
@@ -956,3 +956,51 @@ void AAuraEffectActor::ApplyEffectToTarget(AActor* TargetActor, TSubclassOf<UGam
 ![](./Res/ReadMe_Res/55.png)
 
 **这是一种添加标签很好的方式**，更好维护
+
+## 为 Gameplay Effects 添加标签
+
+> 如果有继承，会继承添加的标签再减去需要移除的标签
+
+![](./Res/ReadMe_Res/56_add_tags.png)
+
+但是这些是 Gamplay Effect Asset 本身 “拥有” 的标签 (所有者)。这些不会转移到任何 Actors
+
+![](./Res/ReadMe_Res/57.png)
+
+![](./Res/ReadMe_Res/58.png)
+
+这个组件会处理向游戏效果的目标(有时称为所有者)授予标签
+
+下面是一个示例：
+
+![](./Res/ReadMe_Res/59.png)
+
+![](./Res/ReadMe_Res/60.png)
+
+> 注意这里 debug 模式下标签后面会有 (1)，这是**标签计数**
+
+- 在游戏效果中的 Stacking，如果 StackingType 不是 None，增加限制数量并不能让标签计数增加，要注意这一点，如果想让计数增加，我们需要设置为 None，然后去被多个 Effect 作用，才会增加，跟 Stacking Limit Count 无关；
+  > 如果使用堆叠，那么效果只会应用一次
+- 标签仅在我们作用到持续/无限效果时才有用
+
+### 有空也可以去阅读一下源码
+
+> 13分钟的时候的建议，https://www.udemy.com/course/unreal-engine-5-gas-top-down-rpg/learn/lecture/39783704
+
+例如可以搜索 **FOnGameplayEffectAppliedDelegate** 看看有哪些变量，一般我们可能会喜欢使用 **OnGameplayEffectAppliedDelegateToSelf**，因为它包括基于即时和持续时间的游戏效果
+
+还有 **OnAnyGameplayEffectRemovedDelegate** 等
+
+![](./Res/ReadMe_Res/61.png)
+
+再次回顾这些内容
+
+![](./Res/ReadMe_Res/62_ReplicationMode.png)
+
+## Gameplay Effect Delegates (游戏效果委托)
+
+示例：
+
+```cpp
+OnActiveGameplayEffectAddedDelegateToSelf.AddUObject(this, &UAuraAbilitySystemComponent::EffectApplied);
+```
