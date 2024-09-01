@@ -390,7 +390,7 @@ void UAuraUserWidget::SetWidgetController(UObject* InWidgetController)
 ```
 
 ```cpp
-// AuraWidgetController.h
+// AuraWidgetController.cpp
 // ----------------------
 UCLASS()
 class AURA_API UAuraWidgetController : public UObject
@@ -1002,5 +1002,31 @@ void AAuraEffectActor::ApplyEffectToTarget(AActor* TargetActor, TSubclassOf<UGam
 示例：
 
 ```cpp
-OnActiveGameplayEffectAddedDelegateToSelf.AddUObject(this, &UAuraAbilitySystemComponent::EffectApplied);
+void UAuraAbilitySystemComponent::AbilityActorInfoSet()
+{
+	/** 绑定相关委托 */
+	OnGameplayEffectAppliedDelegateToSelf.AddUObject(this, &UAuraAbilitySystemComponent::EffectApplied);
+}
+
+void UAuraAbilitySystemComponent::EffectApplied(UAbilitySystemComponent* AbilitySystemComponent, 
+	const FGameplayEffectSpec& EffectSpec, FActiveGameplayEffectHandle ActiveEffectHandle)
+{
+	FGameplayTagContainer TagContainer;
+	EffectSpec.GetAllGrantedTags(TagContainer);
+	for (const FGameplayTag& Tag : TagContainer)
+	{
+		//TODO: Broadcast the tag to the Widget Controller
+		const FString Msg = FString::Printf(TEXT("CE Tag: %s"), *Tag.ToString());
+		GEngine->AddOnScreenDebugMessage(-1, 8.0f, FColor::Blue, Msg);
+	}
+}
+```
+
+如果要使用 `GetAllAssetTags` 需要改一下 CE 中的 Component 配置：
+
+![](./Res/ReadMe_Res/63.png)
+
+```cpp
+FGameplayTagContainer TagContainer;
+EffectSpec.GetAllAssetTags(TagContainer);
 ```
