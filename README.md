@@ -390,7 +390,7 @@ void UAuraUserWidget::SetWidgetController(UObject* InWidgetController)
 ```
 
 ```cpp
-// AuraWidgetController.cpp
+// AuraWidgetController.h
 // ----------------------
 UCLASS()
 class AURA_API UAuraWidgetController : public UObject
@@ -1029,4 +1029,49 @@ void UAuraAbilitySystemComponent::EffectApplied(UAbilitySystemComponent* Ability
 ```cpp
 FGameplayTagContainer TagContainer;
 EffectSpec.GetAllAssetTags(TagContainer);
+```
+
+## Ghost Global (血条残影-类似DNF)
+
+可以利用插值实现过渡的效果，例如每当我们的血条变化时，我们会等待1，2秒，然后使用插值让后面的残影进度条跟随变化：
+
+![](./Res/ReadMe_Res/64_GhostGlobal.png)
+
+## 正确限制属性 (一个小坑)
+
+```cpp
+void UAuraAttributeSet::PreAttributeChange(const FGameplayAttribute& Attribute, float& NewValue)
+{
+	Super::PreAttributeChange(Attribute, NewValue);
+
+	/** 这里并没有限制属性（可Debug测试下） */
+	// 这里限制是为了防止该函数下面可能会用到 NewValue 做相关计算
+	if (Attribute == GetHealthAttribute())
+	{
+		NewValue = FMath::Clamp(NewValue, 0.0f, GetMaxHealth());
+	}
+	if (Attribute == GetManaAttribute())
+	{
+		NewValue = FMath::Clamp(NewValue, 0.0f, GetMaxMana());
+	}
+}
+
+void UAuraAttributeSet::PostGameplayEffectExecute(const FGameplayEffectModCallbackData& Data)
+{
+	Super::PostGameplayEffectExecute(Data);
+
+	FEffectProperties Props;
+	SetEffectProperties(Data, Props);
+
+	/** 正确限制属性（可Debug测试下） */
+	// 实际值将在 Post 这里设置
+	if (Data.EvaluatedData.Attribute == GetHealthAttribute())
+	{
+		SetHealth(FMath::Clamp(GetHealth(), 0.0f, GetMaxHealth()));
+	}
+	if (Data.EvaluatedData.Attribute == GetManaAttribute())
+	{
+		SetMana(FMath::Clamp(GetMana(), 0.0f, GetMaxMana()));
+	}
+}
 ```
